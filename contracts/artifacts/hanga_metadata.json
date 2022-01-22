@@ -1,0 +1,40 @@
+{
+	"compiler": {
+		"version": "0.6.6+commit.6c089d02"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [],
+		"devdoc": {
+			"methods": {}
+		},
+		"userdoc": {
+			"methods": {}
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/hangman.sol": "hanga"
+		},
+		"evmVersion": "istanbul",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/hangman.sol": {
+			"keccak256": "0x50395aace270837a6d21a4a1c13c5a194a586036182ffbdac4071eb27720cc4a",
+			"urls": [
+				"bzz-raw://7f985d774c369eefa5de01799fa323ef30c771f26b2176cc9f55b5e31f066b22",
+				"dweb:/ipfs/QmVL6TGMXxWPDnELbkjVvDpgKxDMEw4UUTbGQWEvzsfhzR"
+			]
+		}
+	},
+	"version": 1
+}

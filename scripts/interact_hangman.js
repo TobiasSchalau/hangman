@@ -1,86 +1,176 @@
-const contractAddress = '0x54F56c773b186DD658E78F4906ca939a6009809A';
+const contractAddress = '0xD96611C58ff9e400049deD314AEe147d97B2B224';
 
+//############## Loading ###############
+// on load website
+window.addEventListener('DOMContentLoaded', async () => {
+    await load();
+    console.log(window.contract);
+});
 
-
-// Source code to interact with smart contract
-// web3 provider with fallback for old version
-window.addEventListener('load', async () => {
-    // New web3 provider
+//load contract
+async function loadWeb3() {
     if (window.ethereum) {
-        window.web3 = new Web3(ethereum);
-        try {
-            // ask user for permission
-            await ethereum.enable();
-            // user approved permission
-        } catch (error) {
-            // user rejected permission
-            console.log('user rejected permission');
-        }
+        window.web3 = new Web3(window.ethereum);
+        window.ethereum.enable();
     }
-    // Old web3 provider
-    else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
-        // no need to ask for permission
-    }
-    // No web3 provider
-    else {
-        console.log('No web3 provider detected');
-    }
-    // contractAddress and abi are setted after contract deploy
-    // var contractAddress = '0xc864D0fef177A69aFa8E302A1b90e450910A4c3E';
-    var abi;
-    const response = await fetch('http://localhost:3000/meta', {mode: 'cors'});
-    console.log(response);
-    const data = await response.json();
-    abi = JSON.parse(data);
-
-    //contract instance
-    contract = new web3.eth.Contract(abi, contractAddress);
-
-});
-console.log(window.web3.currentProvider);
-
-
-//request();
-
-
-
-// Accounts
-var account;
-
-web3.eth.getAccounts(function (err, accounts) {
-    if (err != null) {
-        alert("Error retrieving accounts.");
-        return;
-    }
-    if (accounts.length == 0) {
-        alert("No account found! Make sure the Ethereum client is configured properly.");
-        return;
-    }
-    account = accounts[0];
-    console.log('Account: ' + account);
-    web3.eth.defaultAccount = account;
-});
-
-//Smart contract functions
-// function registerSetInfo() {
-//     info = $("#newInfo").val();
-//     contract.methods.setInfo(info).send({ from: account }).then(function (tx) {
-//         console.log("Transaction: ", tx);
-//     });
-//     $("#newInfo").val('');
-// }
-
-// function registerGetInfo() {
-//     contract.methods.getInfo().call().then(function (info) {
-//         console.log("info: ", info);
-//         document.getElementById('lastInfo').innerHTML = info;
-//     });
-// }
-
-function get_game_costs() {
-    contract.methods.get_game_costs().call().then(function (info) {
-        console.log("info: ", info);
-        document.getElementById('costs').innerHTML = info;
-    });
 }
+
+async function loadContract() {
+    return await new window.web3.eth.Contract(meta_data, contractAddress);
+}
+
+async function load() {
+    await loadWeb3();
+    window.contract = await loadContract();
+}
+
+//############# Functions ##############
+async function get_game_costs() {
+    var costs = await window.contract.methods.get_game_costs().call();
+    console.log("info: ", costs);
+    costs =  costs.replace(/(\r\n|\n|\r)/gm, "<br>");
+    return costs;
+}
+
+async function pay_for_game() {
+    var amount = document.getElementById('amount').value;
+    const acc = await getCurrentAccount();
+    const success = await window.contract.methods.pay_game(amount).send({ from: acc });
+    console.log("info: ", success);
+    return success;
+}
+
+async function getCurrentAccount() {
+    const accounts = await window.web3.eth.getAccounts();
+    return accounts[0];
+}
+
+
+//Dummie functions to fill!!
+async function guess(char) {
+    return true;
+}
+
+async function print_word() {
+    return "tzu";
+}
+
+async function get_lives() {
+    return 5;
+}
+
+async function get_game_status() {
+    return undefined;
+}
+
+//############# ABI ####################
+const meta_data = [
+	{
+		"inputs": [],
+		"stateMutability": "payable",
+		"type": "constructor"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "fallback"
+	},
+	{
+		"inputs": [],
+		"name": "get_game_costs",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_hint",
+		"outputs": [
+			{
+				"internalType": "bytes1",
+				"name": "",
+				"type": "bytes1"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes1",
+				"name": "letter",
+				"type": "bytes1"
+			}
+		],
+		"name": "guess",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "pay_game",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "success",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "print_word",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player_address",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "nickname",
+				"type": "string"
+			}
+		],
+		"name": "storeNewPlayer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
+	}
+];

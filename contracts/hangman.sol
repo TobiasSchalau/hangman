@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.2;
 pragma abicoder v2;
+import "./LibraryRandomWords.sol";
+
 
 contract hangman{
 
     address payable private owner;
     uint[3] private game_cost = [50000,90000,120000];
-    enum Level_of_difficutlty {Easy, Normal, Challenging} //  corresponds to uint8 values 0, 1 and 2
+    enum LevelDifficulty {Easy, Normal, Challenging} //  corresponds to uint8 values 0, 1 and 2
 
 
     struct Player{
@@ -22,7 +24,7 @@ contract hangman{
         bytes current_word;
         uint word_length;
         uint number_failures;
-        Level_of_difficutlty level;
+        LevelDifficulty level;
         bytes tried_letters;
     }
  
@@ -43,16 +45,34 @@ contract hangman{
     /**
     * @dev Pay for playing. 
     */
-    function pay_game (uint256 amount) payable public returns(bool success) {
+    function pay_game (uint amount, string memory nickname) payable public returns(bool success) {
         //checks
         if (amount < game_cost[0] ) return false;
         require(msg.value == amount);
 
         //send money to owner
         send_to_owner(amount);
-
+        // create player
+        if(keccak256(bytes(players[msg.sender].nickname)) == keccak256(bytes(""))){
+            store_new_player(nickname);
+        }
         //confirm payment and allow playing
-        //curr_palyer = players[msg.sender];
+        if(amount >= game_cost[2]){
+            //player payed at least 3 games (at least 120000)
+            uint payed_games = (amount/game_cost[2]) * 3;
+            players[msg.sender].free_games += payed_games;
+        }
+        else if(amount >= game_cost[1]){
+             //player payed for 2 games (between 90k and 120k)
+            uint payed_games = 2;
+            players[msg.sender].free_games += payed_games;
+        }
+        else{
+             //player payed for 1 game
+            uint payed_games = 1;
+            players[msg.sender].free_games += payed_games;
+        }
+        //curr_player = players[msg.sender];
 
         return true;
     }
@@ -67,18 +87,54 @@ contract hangman{
 
 
 
-    function storeNewPlayer(address player_address, string memory nickname) public {
-        // Player memory temp_player = Player({player_address:player_address, nickname:nickname, free_games:0, won_games:0, game:Game()});
-        // players[msg.sender] = temp_player;
+    function store_new_player(string memory nickname) private{
+        Player memory temp_player = Player({
+            player_address:msg.sender, 
+            nickname:nickname,
+            free_games:0,
+            won_games:0,
+            game:Game({
+                true_word:"",
+                current_word:"",
+                word_length:0,
+                number_failures:0,
+                level:LevelDifficulty.Easy,
+                tried_letters:""
+        })});
+        players[msg.sender] = temp_player; 
+    }
+
+    function get_player_info() public view returns(Player memory){
+        return players[msg.sender];
+    }
+
+    function start_game(LevelDifficulty _level) public{
+        Game memory game = players[msg.sender].game;
+
+        players[msg.sender].free_games -= 1; 
+        game.level = _level;
+        game.number_failures = 0;
+
+        // Init word
+        game.true_word = WordGenerator.randomWord();
+        game.word_length = bytes(game.true_word).length;
+
+        // Initiliaze current word with dashes
+        game.current_word = "";
+        for (uint i=0; i<game.word_length; i++) {
+            game.current_word = abi.encodePacked(game.current_word, "");
+        }
+        // store game state
+        players[msg.sender].game = game;
     }
 
     function guess(bytes1 letter) public returns(bool){
         //check if you are allowed to play (payed) 
         // Game game = players[msg.sender].game;
         // require(
-        //     game.level == Level_of_difficutlty.Easy && game.number_failures == 3 ||
-        //     game.level == Level_of_difficutlty.Normal && game.number_failures == 4 ||
-        //     game.level == Level_of_difficutlty.Challenging && game.number_failures == 5,
+        //     game.level == LevelDifficulty.Easy && game.number_failures == 3 ||
+        //     game.level == LevelDifficulty.Normal && game.number_failures == 4 ||
+        //     game.level == LevelDifficulty.Challenging && game.number_failures == 5,
         //     "You can do better. No guess left."
         // );
         // // require(
@@ -129,6 +185,7 @@ contract hangman{
 
 
     function print_word() public view returns (string memory){
+        return string(players[msg.sender].game.true_word);
         // Game game = players[msg.sender].game;
         // return string(abi.encode(game.current_word));
     }

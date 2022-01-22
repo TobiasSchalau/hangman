@@ -56,7 +56,7 @@
 						"type": "bool"
 					}
 				],
-				"stateMutability": "nonpayable",
+				"stateMutability": "view",
 				"type": "function"
 			},
 			{
@@ -88,6 +88,32 @@
 						"type": "string"
 					}
 				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "remaining_lifes",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "enum hangman.LevelDifficulty",
+						"name": "_level",
+						"type": "uint8"
+					}
+				],
+				"name": "start_game",
+				"outputs": [],
 				"stateMutability": "view",
 				"type": "function"
 			},
@@ -148,12 +174,19 @@
 		"remappings": []
 	},
 	"sources": {
+		"contracts/LibraryRandomWords.sol": {
+			"keccak256": "0x77cc578d1b7c081cabd46fa480682d00736d5271470e3f97b7de1245ca766903",
+			"urls": [
+				"bzz-raw://3a1e72c68b5c0a828d45dcba9c20aaa04a57f49aa45e7b018cffa8ad7e1ea35d",
+				"dweb:/ipfs/QmcFMJdcfNarCKgznqx7hPNpWLKTQZFqQ5UCprjcRsK6AW"
+			]
+		},
 		"contracts/hangman.sol": {
-			"keccak256": "0xf2bb5cb2c991e350c3c56ea39c4bf0554c948e394859934b3a3b1d497c2f04b8",
+			"keccak256": "0x284ca67e1264e700003714877f5d33f91087736ef7d15a8a5f0d7fd9c05d779d",
 			"license": "GPL-3.0",
 			"urls": [
-				"bzz-raw://34c41578323ff212bde642d636d2b995739739c2d21c6ef6c5c4bff8f40c32d4",
-				"dweb:/ipfs/QmfUJeE8RYF2eCQh3VDXEcJTvKjAjSFNBqw4F5ySKNCf2G"
+				"bzz-raw://69435b681e7b5c30b80764155b5b4c500ccfaf05d4b5df35796949d98e36d5d4",
+				"dweb:/ipfs/QmQt21ydbFdv8Vh75JEFyfjRvCmq4vpMMc5JLcpJQn9mCy"
 			]
 		}
 	},

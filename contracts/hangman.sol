@@ -2,11 +2,14 @@
 pragma solidity ^0.8.2;
 pragma abicoder v2;
 
+import "./LibraryRandomWords.sol";
+
+
 contract hangman{
 
     address payable private owner;
     uint[3] private game_cost = [50000,90000,120000];
-    enum Level_of_difficutlty {Easy, Normal, Challenging} //  corresponds to uint8 values 0, 1 and 2
+    enum LevelDifficulty {Easy, Normal, Challenging} //  corresponds to uint8 values 0, 1 and 2
 
 
     struct Player{
@@ -20,10 +23,10 @@ contract hangman{
     struct Game {
         bytes true_word;
         bytes current_word;
+        bytes tried_letters;
         uint word_length;
         uint number_failures;
-        Level_of_difficutlty level;
-        bytes tried_letters;
+        LevelDifficulty level;
     }
  
     mapping(address => Player) players;
@@ -65,96 +68,126 @@ contract hangman{
     }
 
 
-
-
     function storeNewPlayer(address player_address, string memory nickname) public {
         // Player memory temp_player = Player({player_address:player_address, nickname:nickname, free_games:0, won_games:0, game:Game()});
         // players[msg.sender] = temp_player;
     }
+    
+    
+    function start_game(LevelDifficulty _level) public view{
+        require(_level >= LevelDifficulty.Easy && _level < LevelDifficulty.Challenging, "Requested level of difficulty not available. Choose between (Easy:0, Normal:1, Challenging:2).");
 
-    function guess(bytes1 letter) public returns(bool){
+        Game memory game = players[msg.sender].game;
+
+        game.level = _level;
+        game.number_failures = 0;
+
+        // Initialize word
+        game.true_word = WordGenerator.randomWord();
+        game.word_length = bytes(game.true_word).length;
+
+        // Initiliaze current word with dashes
+        game.current_word = "";
+        for (uint i=0; i<game.word_length; i++) {
+            game.current_word = abi.encodePacked(game.current_word, "_");
+        }
+    }
+
+
+    function random() private view returns (uint) {
+        // convert hash to integer
+        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp)));
+    }
+
+    function remaining_lifes() public view returns(uint){
+        uint lifes;
+        Game memory game = players[msg.sender].game;
+        if (game.level == LevelDifficulty.Easy){
+            lifes = 5 - game.number_failures;
+        }
+        else if (game.level == LevelDifficulty.Normal){
+            lifes =  4 - game.number_failures;
+        } else if (game.level == LevelDifficulty.Challenging){
+            lifes =  3 - game.number_failures;
+        }
+        return lifes;
+    }
+
+    function print_word() public view returns (string memory){
+        return string(abi.encode(players[msg.sender].game.current_word));
+    }
+
+    function set_word(bytes memory word) private view{
+        Game memory game = players[msg.sender].game;
+        game.true_word = word;
+    }
+
+    function alreadyGuessed(bytes1 letter) private view returns (bool){
+        bool guessed = false;
+        for (uint i=0; i<players[msg.sender].game.tried_letters.length; i++) {
+                if (letter == players[msg.sender].game.tried_letters[i]){
+                    guessed = true; 
+                    break;
+                }
+            }
+        return guessed;
+    }
+
+    function guess(bytes1 letter) public view returns(bool){
         //check if you are allowed to play (payed) 
-        // Game game = players[msg.sender].game;
-        // require(
-        //     game.level == Level_of_difficutlty.Easy && game.number_failures == 3 ||
-        //     game.level == Level_of_difficutlty.Normal && game.number_failures == 4 ||
-        //     game.level == Level_of_difficutlty.Challenging && game.number_failures == 5,
-        //     "You can do better. No guess left."
-        // );
-        // // require(
-        // //     //game.tried_letters[letter],
-        // //     "You've already guessed that letter."
-        // // );
+        Game memory game = players[msg.sender].game;
+        require(
+            game.level == LevelDifficulty.Easy && game.number_failures == 3 ||
+            game.level == LevelDifficulty.Normal && game.number_failures == 4 ||
+            game.level == LevelDifficulty.Challenging && game.number_failures == 5,
+            "You can do better. No guess left."
+        );
+        require(
+            alreadyGuessed(letter),
+            "You've already guessed that letter."
+        );
 
-        // // bytes memory result = new bytes(game.word_length);
-        // bytes memory result = new bytes(game.word_length);
-        // bool occured = false;
-        // for (uint i=0; i<game.word_length; i++) {
-        //     if (letter == game.true_word[i]){
-        //         result[i] = letter;
-        //         occured = true;
-        //     }else{
-        //         result[i]=game.true_word[i];
-        //     }
-        // }
-        // game.current_word = result;
+        bytes memory result = new bytes(game.word_length);
+        bool occured = false;
+        for (uint i=0; i<game.word_length; i++) {
+            if (letter == game.true_word[i]){
+                result[i] = letter;
+                occured = true;
+            }else{
+                result[i]=game.true_word[i];
+            }
+        }
+        game.current_word = result;
 
-        // if (!occured) {
-        //     game.number_failures += 1;
-        //     return occured;
-        // }else{
-        //     // Check if words are equal --> Probably not here --> TODO
-        //     check_words;
-
-        //     return occured;
-        // }
+        if (!occured) {
+            game.number_failures += 1;
+        }
+        return occured;
     }
 
     function check_words() private view returns(bool){
         bool correct = true;
-            for (uint i=0; i< players[msg.sender].game.word_length; i++) {
-                if (players[msg.sender].game.current_word[i] != players[msg.sender].game.true_word[i]){
-                    correct = false;
-                    break;
-                }
+        Game memory game = players[msg.sender].game;
+        for (uint i=0; i<game.word_length; i++) {
+            if (game.current_word[i] != game.true_word[i]){
+                correct = false;
+                break;
             }
+        }
         return correct;
     }
 
-    function random() private view returns (uint) {
-        // sha3 and now have been deprecated
-        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp)));
-        // convert hash to integer
-    }
-
-
-    function print_word() public view returns (string memory){
-        // Game game = players[msg.sender].game;
-        // return string(abi.encode(game.current_word));
-    }
-
-    function set_word(bytes memory word) private{
-        // Game game = players[msg.sender].game;
-        // game.true_word = word;
-    }
-
     function get_hint() public view returns(bytes1){
-        // Game game = players[msg.sender].game;
-        // uint idx = random() % game.word_length;
-        // bytes1 letter = game.true_word[idx];
-        // while (tried_letters[letter]){
-        //     idx = random() % game.word_length;
-        //     letter = game.true_word[idx];
-        // }
+        Game memory game = players[msg.sender].game;
+        uint idx = random() % game.word_length;
+        bytes1 letter = game.true_word[idx];
+        while (alreadyGuessed(letter)){
+            idx = random() % game.word_length;
+            letter = game.true_word[idx];
+        }
 
-        // return letter;
+        return letter;
     }
-
-    
-
-
-
-
 
 
 

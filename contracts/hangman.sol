@@ -11,7 +11,6 @@ contract hangman{
     uint[3] private game_cost = [50000,90000,120000];
     enum LevelDifficulty {Easy, Normal, Challenging} //  corresponds to uint8 values 0, 1 and 2
 
-
     struct Player{
         address player_address;
         string nickname;
@@ -21,15 +20,17 @@ contract hangman{
     }
 
     struct Game {
+        bool started;
         bytes true_word;
         bytes current_word;
         bytes tried_letters;
         uint word_length;
-        uint number_failures;
+        uint remaining_lifes;
         LevelDifficulty level;
 
     }
  
+    // implicitly stored in storage
     mapping(address => Player) players;
 
     /**
@@ -47,7 +48,7 @@ contract hangman{
     /**
     * @dev Pay for playing. 
     */
-    function pay_game (uint amount, string memory nickname) payable public returns(bool success) {
+    function pay_game (uint amount, string calldata nickname) payable public returns(bool success) {
         //checks
         if (amount < game_cost[0] ) return false;
         require(msg.value == amount);
@@ -55,6 +56,7 @@ contract hangman{
         //send money to owner
         send_to_owner(amount);
         // create player
+        //if player does not exist yet
         if(keccak256(bytes(players[msg.sender].nickname)) == keccak256(bytes(""))){
             store_new_player(nickname);
         }
@@ -87,46 +89,63 @@ contract hangman{
     }
 
 
-    function store_new_player(string memory nickname) private{
+    function store_new_player(string calldata nickname) private{
         Player memory temp_player = Player({
             player_address:msg.sender, 
             nickname:nickname,
             free_games:0,
             won_games:0,
             game:Game({
+                started: false,
                 true_word:"",
                 current_word:"",
                 word_length:0,
-                number_failures:0,
                 level:LevelDifficulty.Easy,
+                remaining_lifes:0,
                 tried_letters:""
         })});
+        // this pushes the temp_player from memory into storage
         players[msg.sender] = temp_player; 
     }
 
     function get_player_info() public view returns(Player memory){
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
         return players[msg.sender];
     }
 
     function start_game(LevelDifficulty _level) public{
-	require(_level >= LevelDifficulty.Easy && _level < LevelDifficulty.Challenging, "Requested level of difficulty not available. Choose between (Easy:0, Normal:1, Challenging:2).");
-	
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
+	    require(_level >= LevelDifficulty.Easy && _level <= LevelDifficulty.Challenging, "Requested level of difficulty not available. Choose between (Easy:0, Normal:1, Challenging:2).");
+        require(!players[msg.sender].game.started, "You have already started a game, finish it.");
+        require(players[msg.sender].free_games > 0, "You have no free games left. Pay first.");
+
         Game memory game = players[msg.sender].game;
 
         players[msg.sender].free_games -= 1; 
         game.level = _level;
-        game.number_failures = 0;
+        game.started = true;
+
+        // set remaining life
+        if(_level == LevelDifficulty.Easy){
+            game.remaining_lifes = 5;
+        }
+        else if(_level == LevelDifficulty.Normal){
+            game.remaining_lifes = 3;
+        }else{
+            game.remaining_lifes = 1;
+        }
 
         // Initialize word
         game.true_word = WordGenerator.randomWord();
         game.word_length = bytes(game.true_word).length;
 
         // Initiliaze current word with dashes
-        game.current_word = "";
+        
+        game.current_word = initialize_word(game.true_word.length);
         for (uint i=0; i<game.word_length; i++) {
             game.current_word = abi.encodePacked(game.current_word, "");
         }
-        // store game state
+        // store game state in storage
         players[msg.sender].game = game;
     }
 
@@ -135,32 +154,32 @@ contract hangman{
         return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp)));
     }
 
-    function remaining_lifes() public view returns(uint){
-        uint lifes;
-        Game memory game = players[msg.sender].game;
-        if (game.level == LevelDifficulty.Easy){
-            lifes = 5 - game.number_failures;
+    function initialize_word(uint length) private pure returns(bytes memory){
+        bytes memory temp = new bytes(length);
+        for(uint i = 0; i < length; i++){
+            temp[i] =  bytes1("-");
         }
-        else if (game.level == LevelDifficulty.Normal){
-            lifes =  4 - game.number_failures;
-        } else if (game.level == LevelDifficulty.Challenging){
-            lifes =  3 - game.number_failures;
-        }
-        return lifes;
+        return bytes(temp);
     }
 
     function print_word() public view returns (string memory){
+        require(players[msg.sender].game.started, "No game is running right now.");        
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
         return string(abi.encode(players[msg.sender].game.current_word));
     }
 
-    function set_word(bytes memory word) private view{
-        Game memory game = players[msg.sender].game;
-        game.true_word = word;
+    function remaining_lifes()public view returns(uint){
+        require(players[msg.sender].game.started, "No game is running right now.");        
+        return players[msg.sender].game.remaining_lifes;
+    }
+
+    function set_word(bytes calldata word) private{
+        players[msg.sender].game.true_word = word;
     }
 
     function alreadyGuessed(bytes1 letter) private view returns (bool){
         bool guessed = false;
-        for (uint i=0; i<players[msg.sender].game.tried_letters.length; i++) {
+        for (uint i=0; i < players[msg.sender].game.tried_letters.length; i++) {
                 if (letter == players[msg.sender].game.tried_letters[i]){
                     guessed = true; 
                     break;
@@ -169,60 +188,127 @@ contract hangman{
         return guessed;
     }
 
-    function guess(bytes1 letter) public view returns(bool){
+    function guess(bytes1 letter) public returns(string memory){
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
         //check if you are allowed to play (payed) 
-        Game memory game = players[msg.sender].game;
+        require(players[msg.sender].game.started, "No game is running right now, you cannot guess.");
         require(
-            game.level == LevelDifficulty.Easy && game.number_failures == 3 ||
-            game.level == LevelDifficulty.Normal && game.number_failures == 4 ||
-            game.level == LevelDifficulty.Challenging && game.number_failures == 5,
-            "You can do better. No guess left."
-        );
-        require(
-            alreadyGuessed(letter),
+            !(alreadyGuessed(letter)),
             "You've already guessed that letter."
         );
 
-        bytes memory result = new bytes(game.word_length);
+        Game memory game = players[msg.sender].game;
+
         bool occured = false;
         for (uint i=0; i<game.word_length; i++) {
             if (letter == game.true_word[i]){
-                result[i] = letter;
+                game.current_word[i] = letter;
                 occured = true;
-            }else{
-                result[i]=game.true_word[i];
             }
         }
-        game.current_word = result;
-
         if (!occured) {
-            game.number_failures += 1;
+            game.remaining_lifes -= 1;
         }
-        return occured;
+        // write the updated game object to storage
+        players[msg.sender].game = game;
+
+        // return text
+        bytes memory ret = "";
+        // check if game is finished
+        if(game.remaining_lifes == 0){
+            //lost because no lifes left
+            ret = end_game(false);
+        }
+        else if(check_words()){
+            //won because words are equal
+            ret = end_game(true);
+        }
+        else if(occured){
+            ret = bytes("The letter occured.");
+        }else{
+            ret = bytes("The letter did not occur");
+        }
+        return string(ret);
     }
 
     function check_words() private view returns(bool){
         bool correct = true;
         Game memory game = players[msg.sender].game;
-        for (uint i=0; i<game.word_length; i++) {
-            if (game.current_word[i] != game.true_word[i]){
-                correct = false;
-                break;
-            }
-        }
+
+        correct = keccak256(abi.encodePacked(game.current_word)) == keccak256(abi.encodePacked(game.true_word));
+
         return correct;
     }
 
-    function get_hint() public view returns(bytes1){
+    function end_game(bool success) private returns(bytes memory) {
+        bytes memory temp;
+        Player memory player = players[msg.sender];
+        if(success){
+            temp = abi.encodePacked(
+                                    bytes("Congratulation, you won.\n"),
+                                    bytes("The word "),
+                                    bytes(player.game.true_word),
+                                    bytes(" is correct!\n"),
+                                    bytes("You have now won "),
+                                    bytes(uint2str(player.won_games)),
+                                    bytes(" games in total.\n\n"),
+                                    bytes("You have "),
+                                    bytes(uint2str(player.free_games)),
+                                    bytes(" free games left.\n"));
+            player.won_games += 1;
+        }
+        else{
+            temp = abi.encodePacked(
+                                    bytes("Well, you did not win.\n"),
+                                    bytes("The word was "),
+                                    bytes(player.game.true_word),
+                                    bytes("\nAnyways, you have already won "),
+                                    bytes(uint2str(player.won_games)),
+                                    bytes(" games in total.\n\n"),
+                                    bytes("You have "),
+                                    bytes(uint2str(player.free_games)),
+                                    bytes(" free games left.\n"));
+        }
+        // reset the current game in the player object
+        player.game = Game({started:false,
+                                true_word:"",
+                                current_word:"",
+                                word_length:0,
+                                level:LevelDifficulty.Easy,
+                                remaining_lifes:0,
+                                tried_letters:""
+                            });
+        // safe the modified player to storage                   
+        players[msg.sender] = player;
+        // return the message in bytes
+        return temp;
+    }
+
+    function get_hint() public returns(bytes memory ret){
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
         Game memory game = players[msg.sender].game;
+        // a hint costs one life
+        game.remaining_lifes -= 1;
         uint idx = random() % game.word_length;
         bytes1 letter = game.true_word[idx];
         while (alreadyGuessed(letter)){
             idx = random() % game.word_length;
             letter = game.true_word[idx];
         }
+        // write game to storage
+        players[msg.sender].game = game;
 
-        return letter;
+        // return section
+        ret = " ";
+
+        // end game if no lifes left
+        if(game.remaining_lifes <=0){
+            // return output of endgame
+            ret = end_game(false);
+        }
+        // a bit ugly but works
+        ret[0] = letter;
+        return ret;
     }
 
     fallback() external payable {

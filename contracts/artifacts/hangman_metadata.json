@@ -1,0 +1,258 @@
+{
+	"compiler": {
+		"version": "0.8.7+commit.e28d00a7"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [],
+				"stateMutability": "payable",
+				"type": "constructor"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "fallback"
+			},
+			{
+				"inputs": [],
+				"name": "get_game_costs",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "get_hint",
+				"outputs": [
+					{
+						"internalType": "bytes",
+						"name": "ret",
+						"type": "bytes"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "get_player_info",
+				"outputs": [
+					{
+						"components": [
+							{
+								"internalType": "address",
+								"name": "player_address",
+								"type": "address"
+							},
+							{
+								"internalType": "string",
+								"name": "nickname",
+								"type": "string"
+							},
+							{
+								"internalType": "uint256",
+								"name": "free_games",
+								"type": "uint256"
+							},
+							{
+								"internalType": "uint256",
+								"name": "won_games",
+								"type": "uint256"
+							},
+							{
+								"components": [
+									{
+										"internalType": "bool",
+										"name": "started",
+										"type": "bool"
+									},
+									{
+										"internalType": "bytes",
+										"name": "true_word",
+										"type": "bytes"
+									},
+									{
+										"internalType": "bytes",
+										"name": "current_word",
+										"type": "bytes"
+									},
+									{
+										"internalType": "bytes",
+										"name": "tried_letters",
+										"type": "bytes"
+									},
+									{
+										"internalType": "uint256",
+										"name": "word_length",
+										"type": "uint256"
+									},
+									{
+										"internalType": "uint256",
+										"name": "remaining_lifes",
+										"type": "uint256"
+									},
+									{
+										"internalType": "enum hangman.LevelDifficulty",
+										"name": "level",
+										"type": "uint8"
+									}
+								],
+								"internalType": "struct hangman.Game",
+								"name": "game",
+								"type": "tuple"
+							}
+						],
+						"internalType": "struct hangman.Player",
+						"name": "",
+						"type": "tuple"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes1",
+						"name": "letter",
+						"type": "bytes1"
+					}
+				],
+				"name": "guess",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "nickname",
+						"type": "string"
+					}
+				],
+				"name": "pay_game",
+				"outputs": [
+					{
+						"internalType": "bool",
+						"name": "success",
+						"type": "bool"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "print_word",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "remaining_lifes",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "enum hangman.LevelDifficulty",
+						"name": "_level",
+						"type": "uint8"
+					}
+				],
+				"name": "start_game",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "receive"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"constructor": {
+					"details": "Set contract deployer as owner"
+				},
+				"pay_game(uint256,string)": {
+					"details": "Pay for playing. "
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"contracts/hangman.sol": "hangman"
+		},
+		"evmVersion": "london",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"contracts/LibraryRandomWords.sol": {
+			"keccak256": "0x77cc578d1b7c081cabd46fa480682d00736d5271470e3f97b7de1245ca766903",
+			"urls": [
+				"bzz-raw://3a1e72c68b5c0a828d45dcba9c20aaa04a57f49aa45e7b018cffa8ad7e1ea35d",
+				"dweb:/ipfs/QmcFMJdcfNarCKgznqx7hPNpWLKTQZFqQ5UCprjcRsK6AW"
+			]
+		},
+		"contracts/hangman.sol": {
+			"keccak256": "0x23b1eaff1890ef83dfde2c75275c290aef8c528b0c70fa4fb4da5ed4ca178393",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://2c9d03e7bd94c9b938297d381026a925edb6fd9dc0379d7af00ae76513402db9",
+				"dweb:/ipfs/QmRkGniALnTLH15ZKUPxSCheaYDSX8Dk7CCSk9r8ZMjiJd"
+			]
+		}
+	},
+	"version": 1
+}

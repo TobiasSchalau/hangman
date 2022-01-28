@@ -4,7 +4,6 @@ const contractAddress = '0xD96611C58ff9e400049deD314AEe147d97B2B224';
 // on load website
 window.addEventListener('DOMContentLoaded', async () => {
     await load();
-    console.log(window.contract);
 });
 
 //load contract
@@ -26,18 +25,25 @@ async function load() {
 
 //############# Functions ##############
 async function get_game_costs() {
-    var costs = await window.contract.methods.get_game_costs().call();
-    console.log("info: ", costs);
+    const costs = await window.contract.methods.get_game_costs().call();
     costs =  costs.replace(/(\r\n|\n|\r)/gm, "<br>");
     return costs;
 }
 
 async function pay_for_game() {
     var amount = document.getElementById('amount').value;
+	// get account
     const acc = await getCurrentAccount();
+
+	// check whether transaction is allowed
+	// this is gonna be executed locally without any tx!!
+	const check = await window.contract.methods.pay_game(amount).call();
+	if (!check) return "Transaction cannot be executed. Maybe the send amount was to small.";
+
+	// "real" call editing the blockchain
     const success = await window.contract.methods.pay_game(amount).send({ from: acc });
     console.log("info: ", success);
-    return success;
+    return "Transaction was successful!";
 }
 
 async function getCurrentAccount() {
@@ -48,19 +54,31 @@ async function getCurrentAccount() {
 
 //Dummie functions to fill!!
 async function guess(char) {
+	//returns if guess was correct or not
     return true;
 }
 
 async function print_word() {
+	//returns the current status of the word
     return "tzu";
 }
 
 async function get_lives() {
+	//if lives <1 jascript prints game over and exits
     return 5;
 }
 
 async function get_game_status() {
+	//expect sth. like ("You Win!", undefined)
+	// "you Win!" -> game ends, undefined -> still playing
+	// "game over" is catched earlier
     return undefined;
+}
+
+async function start_game_contract(){
+	// starts the game if allowed
+	// if not return false
+	return true
 }
 
 //############# ABI ####################

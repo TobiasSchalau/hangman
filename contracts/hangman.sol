@@ -76,7 +76,6 @@ contract hangman{
             uint payed_games = 1;
             players[msg.sender].free_games += payed_games;
         }
-        //curr_player = players[msg.sender];
 
         return true;
     }

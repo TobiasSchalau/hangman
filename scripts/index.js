@@ -93,6 +93,7 @@ window.onload = function () {
                 showLives.innerHTML = "You have " + lives + " lives";
                 if (lives < 1) {
                     showLives.innerHTML = "Game Over";
+                    return;
                 }
             }
         )
@@ -103,11 +104,11 @@ window.onload = function () {
         //     }
         // }
 
-        const promise_finished = get_game_status(); //expect sth. like ("You Win!", undefined)
+        const promise_finished = get_game_status(); 
         promise_finished.then(
             (finished) => {
                 if (finished) {
-                    showLives.innerHTML = finished
+                    showLives.innerHTML = finished;
                 }
             }
         )
@@ -265,10 +266,18 @@ window.onload = function () {
 
 function start_game() {
     // start game here if payed before
-
-    // if success
-    document.getElementById('game').style.display = 'inline';
-    document.getElementById('settings').style.display = 'none';
+    const promise_start = start_game_contract();
+    promise_start.then(
+        (answere) => {
+            if (answere){
+                // if success
+                document.getElementById('game').style.display = 'inline';
+                document.getElementById('settings').style.display = 'none';
+            }else{
+                document.getElementById('info').innerHTML = "You have to pay first!";
+            }
+        }
+    )
 }
 
 function pay_game() {

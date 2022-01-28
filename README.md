@@ -20,4 +20,4 @@ remix: connect to local git repository -> connects to remixd
 * run `npm install` in hangman/ - to install necessary packages
 * run 
     * `node server.js`
-    * dev: `npx nodemon server.js`
+    * dev: `npx nodemon server.js` //restarts the server automatically if sth. changes in js/html/css

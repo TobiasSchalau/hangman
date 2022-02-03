@@ -91,7 +91,7 @@ window.onload = function () {
         promise_lives.then(
             (lives) => {
                 showLives.innerHTML = "You have " + lives + " lives";
-                if (lives < 1) {
+                if (lives < 0) {
                     showLives.innerHTML = "Game Over";
                     return;
                 }
@@ -284,7 +284,7 @@ function pay_game() {
     // pay money
     var info = document.getElementById('info');
     var amount = document.getElementById('amount').value;
-    const promise_payment = pay_for_game(amount);
+    var promise_payment = pay_for_game(amount);
     promise_payment.then(
         (answere) => {
             console.log(answere);

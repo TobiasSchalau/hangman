@@ -40,7 +40,7 @@ async function pay_for_game() {
 	// "real" call editing the blockchain
 	var check = await window.contract.methods.pay_game(amount).send({ from: acc, value: amount });
 	if (!check) return "Transaction cannot be executed. Maybe the send amount was to small.";
-    console.log("info: ", check);
+    console.log("Paying process succesfull");
     return "Transaction was successful!";
 }
 
@@ -54,7 +54,7 @@ async function getCurrentAccount() {
 async function guess(char) {
 	const acc = await getCurrentAccount();
     var correct = await window.contract.methods.guess(char).send({ from: acc});
-    console.log("guess() info: ", correct)
+    console.log("guess() completed.");
     return correct;
 }
 
@@ -230,7 +230,7 @@ const meta_data = [
 		"outputs": [
 			{
 				"internalType": "bool",
-				"name": "",
+				"name": "success",
 				"type": "bool"
 			}
 		],

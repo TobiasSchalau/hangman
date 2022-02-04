@@ -8,19 +8,14 @@ window.onload = function () {
     document.getElementById('break').addEventListener('click', return_settings);
     document.getElementById('costs').addEventListener('click', show_costs);
 
+    var loadScreen = document.getElementById('loadScreen');
+    hide_load_screen();
+
     var alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
         'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
         't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
-    // var categories;         // Array of topics
-    // var chosenCategory;     // Selected catagory
-    // var getHint ;          // Word getHint
-    // var word;              // Selected word
-    //var guess;             // Geuss
     var geusses = [];      // Stored geusses
-    // var lives;             // Lives
-    // var counter;           // Count correct geusses
-    // var space;              // Number of spaces in word '-'
 
     // Get elements
     var showLives = document.getElementById("mylives");
@@ -45,18 +40,6 @@ window.onload = function () {
         }
     }
 
-
-    // // Select Catagory
-    // var selectCat = function () {
-    //   if (chosenCategory === categories[0]) {
-    //     catagoryName.innerHTML = "The Chosen Category Is Premier League Football Teams";
-    //   } else if (chosenCategory === categories[1]) {
-    //     catagoryName.innerHTML = "The Chosen Category Is Films";
-    //   } else if (chosenCategory === categories[2]) {
-    //     catagoryName.innerHTML = "The Chosen Category Is Cities";
-    //   }
-    // }
-
     // Create geusses ul
     result = function () {
         wordHolder = document.getElementById('hold');
@@ -70,22 +53,6 @@ window.onload = function () {
                 (word) => {
                     // this is handled in solidity
                     wordHolder.innerHTML = word ;
-                    // word = word.replace(/(\s)/gm, ''); //remove all letters not relevant to get the word length
-                    // for (var i = 0; i < word.length; i++) {
-                    //     correct.setAttribute('id', 'my-word');
-                    //     var guess = document.createElement('li');
-                    //     guess.setAttribute('class', 'guess');
-                    //     if (word[i] === "-") {
-                    //         guess.innerHTML = "-";
-                    //         space = 1;
-                    //     } else {
-                    //         guess.innerHTML = "_";
-                    //     }
-
-                    //     geusses.push(guess);
-                    //     wordHolder.appendChild(correct);
-                    //     correct.appendChild(guess);
-                    // }
                 }
             )
         }
@@ -105,12 +72,6 @@ window.onload = function () {
                     }
                 }
             )
-
-            // for (var i = 0; i < geusses.length; i++) {
-            //     if (counter + space === geusses.length) {
-            //         showLives.innerHTML = "You Win!";
-            //     }
-            // }
 
             const promise_finished = get_game_status(); 
             promise_finished.then(
@@ -141,19 +102,45 @@ window.onload = function () {
             //exchange with contract.guess()
 
             // was guess correct?
+            show_load_screen("Checking the guess in the blockchain...");
             const promise_success = guess(web3.utils.asciiToHex(char));
-            console.log("Guess(): ", promise_success);
+
+            promise_success.then(
+                (success) => {
+                    show_load_screen(success);
+                    console.log("Guess(): ", promise_success);
+                    var promis_word = print_word();
+                    promis_word.then(
+                        (word) => {
+                            var oldWord = wordHolder.innerHTML;
+                            // assign new word to html
+                            wordHolder.innerHTML = word;
+                            // retrieve it. this might make them comparable..weird stuff.
+                            var newWord = wordHolder.innerHTML;
+                            console.log("Old word: ", oldWord, " vs newWord: ", word);
+                            if(oldWord == newWord){
+                                document.getElementById('info').innerHTML = "Your guess was wrong.";
+                                animate();
+                            }
+                            else{
+                                document.getElementById('info').innerHTML = "Your guess was correct.";
+                            }
+                            comments();
+                            //animate man if failed
+                            // it is a transaction, and transactions do not return values, we need another function to read 
+                            // the result(if guess was correct)
+                            // I use the word function and check, if word has changed.
+                            // https://stackoverflow.com/questions/49965349/contract-function-returning-a-transaction-object-instead-of-a-bool
+                            hide_load_screen();
+                        }
+                    )
+                }
+            )
+            
 
             // word with underscores - represents current status
             // which format? with underscores and spaces?
-            var promis_word = print_word();
-            promis_word.then(
-                (word) => {
-                    wordHolder.innerHTML = word;
-                    comments();
-                    animate();
-                }
-            )
+            
         }
     }
 
@@ -266,15 +253,27 @@ window.onload = function () {
 
 function start_game() {
     // start game here if payed before
+    show_load_screen("Starting the game and saving it to the blockchain..");
     const promise_start = start_game_contract();
     promise_start.then(
-        (answere) => {
-            if (answere){
+        (answer) => {
+            if (answer){
                 // if success
+                //print the word
+                var promis_word = print_word();
+                show_load_screen("Fetching the word from the blockchain..");
+                promis_word.then(
+                    (word) => {
+                        wordHolder.innerHTML = word;
+                        comments();
+                    }
+                )
+                hide_load_screen();
                 game_started = true;
                 document.getElementById('game').style.display = 'inline';
                 document.getElementById('settings').style.display = 'none';
             }else{
+                hide_load_screen();
                 document.getElementById('info').innerHTML = "You have to pay first!";
             }
         }
@@ -282,16 +281,29 @@ function start_game() {
 }
 
 function pay_game() {
+    show_load_screen("Processing the payment..");
     // pay money
     var info = document.getElementById('info');
     var amount = document.getElementById('amount').value;
     const promise_payment = pay_for_game(amount);
     promise_payment.then(
-        (answere) => {
-            console.log(answere);
-            info.innerHTML=answere;
+        (answer) => {
+            console.log(answer);
+            info.innerHTML=answer;
+            show_load_screen(answer);
+            hide_load_screen();
         }
     )
+}
+
+function show_load_screen(message){
+    loadScreen.style.display = "block";
+    loadScreen.innerHTML = message;
+}
+
+function hide_load_screen(){
+    loadScreen.style.display = "none";
+    loadScreen.innerHTML = "";
 }
 
 function return_settings() {

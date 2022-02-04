@@ -48,18 +48,18 @@ contract hangman{
     /**
     * @dev Pay for playing. 
     */
-    function pay_game (uint amount, string calldata nickname) payable public returns(bool success) {
+    function pay_game (uint amount) payable public returns(bool success) {
         //checks
         if (amount < game_cost[0] ) return false;
-        require(msg.value == amount);
+        require(msg.value == amount, "pay_game(): message not equal to value.");
 
         //send money to owner
         send_to_owner(amount);
         // create player
         //if player does not exist yet
-        if(keccak256(bytes(players[msg.sender].nickname)) == keccak256(bytes(""))){
-            store_new_player(nickname);
-        }
+        // if(keccak256(bytes(players[msg.sender].nickname)) == keccak256(bytes(""))){
+        store_new_player();
+        // }
         //confirm payment and allow playing
         if(amount >= game_cost[2]){
             //player payed at least 3 games (at least 120000)
@@ -88,10 +88,10 @@ contract hangman{
     }
 
 
-    function store_new_player(string calldata nickname) private{
+    function store_new_player() private{
         Player memory temp_player = Player({
             player_address:msg.sender, 
-            nickname:nickname,
+            nickname:"test",
             free_games:0,
             won_games:0,
             game:Game({
@@ -108,15 +108,15 @@ contract hangman{
     }
 
     function get_player_info() public view returns(Player memory){
-        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "get_player_info(): You have not payed yet. Call pay_game first");
         return players[msg.sender];
     }
 
     function start_game(LevelDifficulty _level) public{
-        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
-	    require(_level >= LevelDifficulty.Easy && _level <= LevelDifficulty.Challenging, "Requested level of difficulty not available. Choose between (Easy:0, Normal:1, Challenging:2).");
-        require(!players[msg.sender].game.started, "You have already started a game, finish it.");
-        require(players[msg.sender].free_games > 0, "You have no free games left. Pay first.");
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "start_game(): You have not payed yet. Call pay_game first");
+	    require(_level >= LevelDifficulty.Easy && _level <= LevelDifficulty.Challenging, "start_game(): Requested level of difficulty not available. Choose between (Easy:0, Normal:1, Challenging:2).");
+        require(!players[msg.sender].game.started, "start_game(): You have already started a game, finish it.");
+        require(players[msg.sender].free_games > 0, "start_game(): You have no free games left. Pay first.");
 
         Game memory game = players[msg.sender].game;
 
@@ -162,13 +162,13 @@ contract hangman{
     }
 
     function print_word() public view returns (string memory){
-        require(players[msg.sender].game.started, "No game is running right now.");        
-        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
+        require(players[msg.sender].game.started, "print_word(): No game is running right now.");        
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "print_word(): You have not payed yet. Call pay_game first");
         return string(abi.encode(players[msg.sender].game.current_word));
     }
 
     function remaining_lifes()public view returns(uint){
-        require(players[msg.sender].game.started, "No game is running right now.");        
+        require(players[msg.sender].game.started, "remaining_lifes(): No game is running right now.");        
         return players[msg.sender].game.remaining_lifes;
     }
 
@@ -187,13 +187,13 @@ contract hangman{
         return guessed;
     }
 
-    function guess(bytes1 letter) public returns(string memory){
-        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
+    function guess(bytes1 letter) public returns(bool){
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "guess(): You have not payed yet. Call pay_game first");
         //check if you are allowed to play (payed) 
-        require(players[msg.sender].game.started, "No game is running right now, you cannot guess.");
+        require(players[msg.sender].game.started, "guess(): No game is running right now, you cannot guess.");
         require(
             !(alreadyGuessed(letter)),
-            "You've already guessed that letter."
+            "guess(): You've already guessed that letter."
         );
 
         Game memory game = players[msg.sender].game;
@@ -212,25 +212,25 @@ contract hangman{
         players[msg.sender].game = game;
 
         // return text
-        bytes memory ret = "";
+        bool ret = false;
         // check if game is finished
-        if(game.remaining_lifes == 0){
-            //lost because no lifes left
-            ret = end_game(false);
-        }
-        else if(check_words()){
-            //won because words are equal
-            ret = end_game(true);
-        }
-        else if(occured){
-            ret = bytes("The letter occured.");
+        // if(game.remaining_lifes == 0){
+        //     //lost because no lifes left
+        //     ret = end_game(false);
+        // }
+        // else if(check_words()){
+        //     //won because words are equal
+        //     ret = end_game(true);
+        // }
+        if(occured){
+            ret = true;
         }else{
-            ret = bytes("The letter did not occur");
+            ret = false;
         }
-        return string(ret);
+        return ret;
     }
 
-    function check_words() private view returns(bool){
+    function check_words() public view returns(bool){
         bool correct = true;
         Game memory game = players[msg.sender].game;
 
@@ -284,7 +284,7 @@ contract hangman{
     }
 
     function get_hint() public returns(bytes memory ret){
-        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "You have not payed yet. Call pay_game first");
+        require(keccak256(abi.encodePacked(players[msg.sender].nickname)) != keccak256(""), "get_hint(): You have not payed yet. Call pay_game first");
         Game memory game = players[msg.sender].game;
         // a hint costs one life
         game.remaining_lifes -= 1;

@@ -1,5 +1,8 @@
-window.onload = function () {
+var game_started = false;
 
+window.onload = function () {
+    
+    const web3 = new Web3(Web3.givenProvider || "ws://localhost:8545");
     document.getElementById('start').addEventListener('click', start_game);
     document.getElementById('pay').addEventListener('click', pay_game);
     document.getElementById('break').addEventListener('click', return_settings);
@@ -21,17 +24,16 @@ window.onload = function () {
 
     // Get elements
     var showLives = document.getElementById("mylives");
-    var showCatagory = document.getElementById("scatagory");
+    var showCatagory = document.getElementById("catagoryName");
     var getHint = document.getElementById("hint");
     var showClue = document.getElementById("clue");
 
 
 
     // create alphabet ul
-    var buttons = function () {
+    buttons = function () {
         myButtons = document.getElementById('buttons');
         letters = document.createElement('ul');
-
         for (var i = 0; i < alphabet.length; i++) {
             letters.id = 'alphabet';
             list = document.createElement('li');
@@ -60,58 +62,66 @@ window.onload = function () {
         wordHolder = document.getElementById('hold');
         correct = document.createElement('ul');
 
-        // word with underscores - represents current status
-        // which format? with underscores and spaces?
-        const promis_word = print_word();
-        promis_word.then(
-            (word) => {
-                word = word.replace(/(\s)/gm, ''); //remove all letters not relevant to get the word length
-                for (var i = 0; i < word.length; i++) {
-                    correct.setAttribute('id', 'my-word');
-                    var guess = document.createElement('li');
-                    guess.setAttribute('class', 'guess');
-                    if (word[i] === "-") {
-                        guess.innerHTML = "-";
-                        space = 1;
-                    } else {
-                        guess.innerHTML = "_";
-                    }
+        if(game_started){
+            // word with underscores - represents current status
+            // which format? with underscores and spaces?
+            const promis_word = print_word();
+            promis_word.then(
+                (word) => {
+                    // this is handled in solidity
+                    wordHolder.innerHTML = word ;
+                    // word = word.replace(/(\s)/gm, ''); //remove all letters not relevant to get the word length
+                    // for (var i = 0; i < word.length; i++) {
+                    //     correct.setAttribute('id', 'my-word');
+                    //     var guess = document.createElement('li');
+                    //     guess.setAttribute('class', 'guess');
+                    //     if (word[i] === "-") {
+                    //         guess.innerHTML = "-";
+                    //         space = 1;
+                    //     } else {
+                    //         guess.innerHTML = "_";
+                    //     }
 
-                    geusses.push(guess);
-                    wordHolder.appendChild(correct);
-                    correct.appendChild(guess);
+                    //     geusses.push(guess);
+                    //     wordHolder.appendChild(correct);
+                    //     correct.appendChild(guess);
+                    // }
                 }
-            }
-        )
+            )
+        }
+        
     }
 
     // Show lives
     comments = function () {
-        const promise_lives = get_lives();
-        promise_lives.then(
-            (lives) => {
-                showLives.innerHTML = "You have " + lives + " lives";
-                if (lives < 1) {
-                    showLives.innerHTML = "Game Over";
-                    return;
+        if(game_started){
+            const promise_lives = get_lives();
+            promise_lives.then(
+                (lives) => {
+                    showLives.innerHTML = "You have " + lives + " lives";
+                    if (lives < 1) {
+                        showLives.innerHTML = "Game Over";
+                        return;
+                    }
                 }
-            }
-        )
+            )
 
-        // for (var i = 0; i < geusses.length; i++) {
-        //     if (counter + space === geusses.length) {
-        //         showLives.innerHTML = "You Win!";
-        //     }
-        // }
+            // for (var i = 0; i < geusses.length; i++) {
+            //     if (counter + space === geusses.length) {
+            //         showLives.innerHTML = "You Win!";
+            //     }
+            // }
 
-        const promise_finished = get_game_status(); 
-        promise_finished.then(
-            (finished) => {
-                if (finished) {
-                    showLives.innerHTML = finished;
+            const promise_finished = get_game_status(); 
+            promise_finished.then(
+                (finished) => {
+                    if (finished) {
+                        showLives.innerHTML = finished;
+                    }
                 }
-            }
-        )
+            )
+        }
+        
 
     }
 
@@ -122,6 +132,8 @@ window.onload = function () {
     check = function () {
         list.onclick = function () {
             var char = (this.innerHTML);
+            
+
             this.setAttribute("class", "active");
             this.onclick = null;
 
@@ -129,29 +141,17 @@ window.onload = function () {
             //exchange with contract.guess()
 
             // was guess correct?
-            const promise_success = guess(char);
-
+            const promise_success = guess(web3.utils.asciiToHex(char));
+            console.log("Guess(): ", promise_success);
 
             // word with underscores - represents current status
             // which format? with underscores and spaces?
             var promis_word = print_word();
             promis_word.then(
                 (word) => {
-                    word=word.replace(/(_|\s)/gm, '');//not necessary at all
-                    for (var i = 0; i < word.length; i++) {
-                        if (word[i] === char) {
-                            geusses[i].innerHTML = char;
-                        }
-                    }
-
-                    var j = (word.indexOf(char));
-                    if (j === -1) {
-                        // lives -= 1;
-                        comments();
-                        animate();
-                    } else {
-                        comments();
-                    }
+                    wordHolder.innerHTML = word;
+                    comments();
+                    animate();
                 }
             )
         }
@@ -175,7 +175,7 @@ window.onload = function () {
 
     // Reset
     document.getElementById('reset').onclick = function () {
-        correct.parentNode.removeChild(correct);
+        wordHolder.innerHTML = "";
         letters.parentNode.removeChild(letters);
         showClue.innerHTML = "";
         context.clearRect(0, 0, 400, 400);
@@ -271,6 +271,7 @@ function start_game() {
         (answere) => {
             if (answere){
                 // if success
+                game_started = true;
                 document.getElementById('game').style.display = 'inline';
                 document.getElementById('settings').style.display = 'none';
             }else{

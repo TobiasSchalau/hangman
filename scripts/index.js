@@ -1,4 +1,5 @@
 var game_started = false;
+var player_exists = false;
 
 window.onload = function () {
     
@@ -9,6 +10,7 @@ window.onload = function () {
     document.getElementById('costs').addEventListener('click', show_costs);
 
     var loadScreen = document.getElementById('loadScreen');
+ 
     hide_load_screen();
 
     var alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
@@ -21,9 +23,35 @@ window.onload = function () {
     var showLives = document.getElementById("mylives");
     var showCatagory = document.getElementById("catagoryName");
     var getHint = document.getElementById("hint");
+    getHint.addEventListener('click', get_hint);
     var showClue = document.getElementById("clue");
+    
 
 
+    stats = function(){
+        show_load_screen("fetching stats..");
+        var freeGames = document.getElementById("free-games");
+        var wonGames = document.getElementById("won-games");
+        const exist_promise = check_player_exist();
+        exist_promise.then(
+            (exists) => {
+                player_exists = exists;
+                if(player_exists){
+                    const won_games_promise = get_won_games();
+                    won_games_promise.then(
+                        (won_games) => {
+                            wonGames.innerHTML = "Won Games: "+ won_games;
+                        })
+                    const free_games_promise = get_free_games();
+                    free_games_promise.then(
+                        (free_games) => {
+                            freeGames.innerHTML = "Free Games left: "+ free_games;
+                        })
+                }
+                hide_load_screen();
+            })
+    }
+    stats();
 
     // create alphabet ul
     buttons = function () {
@@ -59,7 +87,7 @@ window.onload = function () {
         
     }
 
-    // Show lives
+    // Show lives and maybe end the game
     comments = function () {
         if(game_started){
             const promise_lives = get_lives();
@@ -68,6 +96,13 @@ window.onload = function () {
                     showLives.innerHTML = "You have " + lives + " lives";
                     if (lives < 1) {
                         showLives.innerHTML = "Game Over";
+                        const promise_word = get_real_word();
+                        promise_word.then(
+                            (real_word) =>{
+                                wordHolder = document.getElementById('hold');
+                                wordHolder.innerHTML = "The word was: " + real_word +".";
+                            }
+                        )
                         return;
                     }
                 }
@@ -144,6 +179,32 @@ window.onload = function () {
         }
     }
 
+    function get_hint() {
+        
+        //exchange with contract.guess()
+
+        // was guess correct?
+        show_load_screen("Requesting a hint from the contract...");
+        const promise_success = request_hint();
+
+        promise_success.then(
+            (success) => {
+                show_load_screen(success);
+                console.log("Guess(): ", promise_success);
+                var promise_hint = get_last_hint();
+                promise_hint.then(
+                    (hint) => {
+                        showClue.innerHTML = "Clue: " + hint;
+                       
+                        comments();
+                        animate();
+
+                        hide_load_screen();
+                    }
+                )
+            }
+        )
+    }
 
     // start game - initialise
     play = function () {
@@ -157,6 +218,7 @@ window.onload = function () {
         result();
         comments();
         canvas();
+        stats();
     }
 
 
@@ -167,6 +229,7 @@ window.onload = function () {
         showClue.innerHTML = "";
         context.clearRect(0, 0, 400, 400);
         play();
+        stats();
     }
 
     // Animate man
@@ -291,9 +354,13 @@ function pay_game() {
             console.log(answer);
             info.innerHTML=answer;
             show_load_screen(answer);
+            // stats();
             hide_load_screen();
         }
+    ).finally(
+        function(){ stats();}
     )
+
 }
 
 function show_load_screen(message){

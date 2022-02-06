@@ -1,4 +1,4 @@
-const contractAddress = '0xe4A91D37fE43b75b486f558901F6e5b861fB2BCD';
+const contractAddress = '0x65bC3319e691C1Fc9Ac5a8fa7A60A7333F5e298E';
 
 //############## Loading ###############
 // on load website
@@ -30,6 +30,28 @@ async function get_game_costs() {
     return costs;
 }
 
+async function check_player_exist(){
+	const acc = await getCurrentAccount();
+	var exists = await window.contract.methods.check_player_exist().call({ from: acc});
+    console.log("check_player_exist() completed: ", exists );
+    return exists;
+}
+
+async function get_free_games(){
+	const acc = await getCurrentAccount();
+	var free_games = await window.contract.methods.get_free_games().call({ from: acc});
+    console.log("get_free_games() completed: ", free_games);
+    return free_games;
+}
+
+async function get_won_games(){
+	const acc = await getCurrentAccount();
+	var won_games = await window.contract.methods.get_won_games().call({ from: acc});
+    console.log("get_won_games() completed: ", won_games);
+    return won_games;
+}
+
+
 async function pay_for_game() {
     var amount = document.getElementById('amount').value;
 	// get account
@@ -58,10 +80,33 @@ async function guess(char) {
     return correct;
 }
 
+//Dummie functions to fill!!
+async function request_hint() {
+	const acc = await getCurrentAccount();
+    var success = await window.contract.methods.get_hint().send({ from: acc});
+    console.log("request_hint() completed.");
+    return success;
+}
+
+async function get_last_hint(){
+	const acc = await getCurrentAccount();
+    const hint = await window.contract.methods.return_last_hint().call({ from: acc});
+	console.log("get_last_hint(): ", hint);
+    return hint;
+}
+
 async function print_word() {
     // print current word
 	const acc = await getCurrentAccount();
     const word = await window.contract.methods.print_word().call({ from: acc});
+	console.log("print_word(): ", word);
+    return word;
+}
+
+async function get_real_word() {
+	// only works if game is over
+	const acc = await getCurrentAccount();
+    const word = await window.contract.methods.get_real_word().call({ from: acc});
 	console.log("print_word(): ", word);
     return word;
 }
@@ -77,12 +122,6 @@ async function get_game_status() {
 
     var status = await window.contract.methods.check_words().call({ from: acc });
     return status;
-}
-
-async function start() {
-	const acc = await getCurrentAccount();
-    await window.contract.methods.start_game(0).send({ from: acc});
-    return undefined;
 }
 
 async function start_game_contract(){
@@ -104,12 +143,38 @@ const meta_data = [
 	},
 	{
 		"inputs": [],
+		"name": "check_player_exist",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "check_words",
 		"outputs": [
 			{
 				"internalType": "bool",
 				"name": "",
 				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_free_games",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -131,88 +196,31 @@ const meta_data = [
 	{
 		"inputs": [],
 		"name": "get_hint",
-		"outputs": [
-			{
-				"internalType": "bytes",
-				"name": "ret",
-				"type": "bytes"
-			}
-		],
+		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
-		"name": "get_player_info",
+		"name": "get_real_word",
 		"outputs": [
 			{
-				"components": [
-					{
-						"internalType": "address",
-						"name": "player_address",
-						"type": "address"
-					},
-					{
-						"internalType": "string",
-						"name": "nickname",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "free_games",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "won_games",
-						"type": "uint256"
-					},
-					{
-						"components": [
-							{
-								"internalType": "bool",
-								"name": "started",
-								"type": "bool"
-							},
-							{
-								"internalType": "bytes",
-								"name": "true_word",
-								"type": "bytes"
-							},
-							{
-								"internalType": "bytes",
-								"name": "current_word",
-								"type": "bytes"
-							},
-							{
-								"internalType": "bytes",
-								"name": "tried_letters",
-								"type": "bytes"
-							},
-							{
-								"internalType": "uint256",
-								"name": "word_length",
-								"type": "uint256"
-							},
-							{
-								"internalType": "uint256",
-								"name": "remaining_lifes",
-								"type": "uint256"
-							},
-							{
-								"internalType": "enum hangman.LevelDifficulty",
-								"name": "level",
-								"type": "uint8"
-							}
-						],
-						"internalType": "struct hangman.Game",
-						"name": "game",
-						"type": "tuple"
-					}
-				],
-				"internalType": "struct hangman.Player",
+				"internalType": "string",
 				"name": "",
-				"type": "tuple"
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_won_games",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -230,7 +238,7 @@ const meta_data = [
 		"outputs": [
 			{
 				"internalType": "bool",
-				"name": "success",
+				"name": "",
 				"type": "bool"
 			}
 		],
@@ -277,6 +285,19 @@ const meta_data = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "return_last_hint",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
 			}
 		],
 		"stateMutability": "view",

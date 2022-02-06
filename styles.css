@@ -9,12 +9,15 @@ body {
   font-size: 18px;
   padding:0px;
   margin:0px;
+  vertical-align: middle;
+
 }
 
 .wrappper {
   width: 100%;
   margin: 0 auto;
 }
+
 .wrappper:after {
   content: "";
   display: table;

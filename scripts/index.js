@@ -106,15 +106,14 @@ window.onload = function () {
                         )
                         return;
                     }
-                }
-            )
-
-            const promise_finished = get_game_status(); 
-            promise_finished.then(
-                (finished) => {
-                    if (finished) {
-                        showLives.innerHTML = "You won the game!";
-                    }
+                    const promise_finished = get_game_status(); 
+                    promise_finished.then(
+                        (finished) => {
+                            if (finished) {
+                                showLives.innerHTML = "You won the game!";
+                            }
+                        }
+                    )
                 }
             )
         }

@@ -1,4 +1,4 @@
-const contractAddress = '0xD96611C58ff9e400049deD314AEe147d97B2B224';
+const contractAddress = '0x65bC3319e691C1Fc9Ac5a8fa7A60A7333F5e298E';
 
 //############## Loading ###############
 // on load website
@@ -25,24 +25,44 @@ async function load() {
 
 //############# Functions ##############
 async function get_game_costs() {
-    const costs = await window.contract.methods.get_game_costs().call();
+    var costs = await window.contract.methods.get_game_costs().call();
     costs =  costs.replace(/(\r\n|\n|\r)/gm, "<br>");
     return costs;
 }
+
+async function check_player_exist(){
+	const acc = await getCurrentAccount();
+	var exists = await window.contract.methods.check_player_exist().call({ from: acc});
+    console.log("check_player_exist() completed: ", exists );
+    return exists;
+}
+
+async function get_free_games(){
+	const acc = await getCurrentAccount();
+	var free_games = await window.contract.methods.get_free_games().call({ from: acc});
+    console.log("get_free_games() completed: ", free_games);
+    return free_games;
+}
+
+async function get_won_games(){
+	const acc = await getCurrentAccount();
+	var won_games = await window.contract.methods.get_won_games().call({ from: acc});
+    console.log("get_won_games() completed: ", won_games);
+    return won_games;
+}
+
 
 async function pay_for_game() {
     var amount = document.getElementById('amount').value;
 	// get account
     const acc = await getCurrentAccount();
-
+	console.log(acc);
 	// check whether transaction is allowed
-	// this is gonna be executed locally without any tx!!
-	const check = await window.contract.methods.pay_game(amount).call();
-	if (!check) return "Transaction cannot be executed. Maybe the send amount was to small.";
 
 	// "real" call editing the blockchain
-    const success = await window.contract.methods.pay_game(amount).send({ from: acc });
-    console.log("info: ", success);
+	var check = await window.contract.methods.pay_game(amount).send({ from: acc, value: amount });
+	if (!check) return "Transaction cannot be executed. Maybe the send amount was to small.";
+    console.log("Paying process succesfull");
     return "Transaction was successful!";
 }
 
@@ -54,31 +74,60 @@ async function getCurrentAccount() {
 
 //Dummie functions to fill!!
 async function guess(char) {
-	//returns if guess was correct or not
-    return true;
+	const acc = await getCurrentAccount();
+    var correct = await window.contract.methods.guess(char).send({ from: acc});
+    console.log("guess() completed.");
+    return correct;
+}
+
+//Dummie functions to fill!!
+async function request_hint() {
+	const acc = await getCurrentAccount();
+    var success = await window.contract.methods.get_hint().send({ from: acc});
+    console.log("request_hint() completed.");
+    return success;
+}
+
+async function get_last_hint(){
+	const acc = await getCurrentAccount();
+    const hint = await window.contract.methods.return_last_hint().call({ from: acc});
+	console.log("get_last_hint(): ", hint);
+    return hint;
 }
 
 async function print_word() {
-	//returns the current status of the word
-    return "tzu";
+    // print current word
+	const acc = await getCurrentAccount();
+    const word = await window.contract.methods.print_word().call({ from: acc});
+	console.log("print_word(): ", word);
+    return word;
+}
+
+async function get_real_word() {
+	// only works if game is over
+	const acc = await getCurrentAccount();
+    const word = await window.contract.methods.get_real_word().call({ from: acc});
+	console.log("print_word(): ", word);
+    return word;
 }
 
 async function get_lives() {
-	//if lives <1 jascript prints game over and exits
-    return 5;
+	const acc = await getCurrentAccount();
+    var lives = await window.contract.methods.remaining_lifes().call({ from: acc});
+    return lives;
 }
 
 async function get_game_status() {
-	//expect sth. like ("You Win!", undefined)
-	// "you Win!" -> game ends, undefined -> still playing
-	// "game over" is catched earlier
-    return undefined;
+	const acc = await getCurrentAccount();
+
+    var status = await window.contract.methods.check_words().call({ from: acc });
+    return status;
 }
 
 async function start_game_contract(){
-	// starts the game if allowed
-	// if not return false
-	return true
+	const acc = await getCurrentAccount();
+	await window.contract.methods.start_game(0).send({ from: acc});
+	return true;
 }
 
 //############# ABI ####################
@@ -91,6 +140,45 @@ const meta_data = [
 	{
 		"stateMutability": "payable",
 		"type": "fallback"
+	},
+	{
+		"inputs": [],
+		"name": "check_player_exist",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "check_words",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_free_games",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
 	},
 	{
 		"inputs": [],
@@ -108,11 +196,31 @@ const meta_data = [
 	{
 		"inputs": [],
 		"name": "get_hint",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_real_word",
 		"outputs": [
 			{
-				"internalType": "bytes1",
+				"internalType": "string",
 				"name": "",
-				"type": "bytes1"
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "get_won_games",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -170,19 +278,40 @@ const meta_data = [
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "remaining_lifes",
+		"outputs": [
 			{
-				"internalType": "address",
-				"name": "player_address",
-				"type": "address"
-			},
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "return_last_hint",
+		"outputs": [
 			{
 				"internalType": "string",
-				"name": "nickname",
+				"name": "",
 				"type": "string"
 			}
 		],
-		"name": "storeNewPlayer",
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "enum hangman.LevelDifficulty",
+				"name": "_level",
+				"type": "uint8"
+			}
+		],
+		"name": "start_game",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

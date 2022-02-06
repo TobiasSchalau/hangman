@@ -96,6 +96,7 @@ window.onload = function () {
                     showLives.innerHTML = "You have " + lives + " lives";
                     if (lives < 1) {
                         showLives.innerHTML = "Game Over";
+                        drawArray[5]();
                         const promise_word = get_real_word();
                         promise_word.then(
                             (real_word) =>{
@@ -112,7 +113,7 @@ window.onload = function () {
             promise_finished.then(
                 (finished) => {
                     if (finished) {
-                        showLives.innerHTML = finished;
+                        showLives.innerHTML = "You won the game!";
                     }
                 }
             )
@@ -142,7 +143,6 @@ window.onload = function () {
 
             promise_success.then(
                 (success) => {
-                    show_load_screen(success);
                     console.log("Guess(): ", promise_success);
                     var promis_word = print_word();
                     promis_word.then(
@@ -154,11 +154,11 @@ window.onload = function () {
                             var newWord = wordHolder.innerHTML;
                             console.log("Old word: ", oldWord, " vs newWord: ", word);
                             if(oldWord == newWord){
-                                document.getElementById('info').innerHTML = "Your guess was wrong.";
+                                showClue.innerHTML = "Your guess was wrong.";
                                 animate();
                             }
                             else{
-                                document.getElementById('info').innerHTML = "Your guess was correct.";
+                                showClue.innerHTML = "Your guess was correct.";
                             }
                             comments();
                             //animate man if failed
@@ -219,6 +219,12 @@ window.onload = function () {
         comments();
         canvas();
         stats();
+        console.log("Going to draw frame now.");
+        drawArray[6]();
+        drawArray[7]();
+        drawArray[8]();
+        drawArray[9]();
+
     }
 
 
@@ -376,6 +382,7 @@ function hide_load_screen(){
 function return_settings() {
     document.getElementById('game').style.display = 'none';
     document.getElementById('settings').style.display = 'inline';
+    stats();
 }
 
 function show_costs() {
